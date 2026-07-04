@@ -2,8 +2,12 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiError } from '../types/api';
 
+const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const normalizedApiBaseUrl = rawApiBaseUrl.replace(/\/+$/, '');
+const apiBaseUrl = normalizedApiBaseUrl.endsWith('/api') ? normalizedApiBaseUrl : `${normalizedApiBaseUrl}/api`;
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
