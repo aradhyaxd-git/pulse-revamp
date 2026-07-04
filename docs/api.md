@@ -1,83 +1,310 @@
-# API Reference
+# API Reference — Pulse Delivery
 
-This document matches the current Express routes exposed by the backend. All application routes are mounted under `/api`. The API also exposes `GET /health` for a basic liveness check.
+Base URL: `http://localhost:4000/api`  
+Health check: `GET /health` → `{ "status": "ok", "timestamp": "..." }`
 
-## Response Shape
+---
 
-The frontend API client forwards `response.data` directly, so endpoints should return JSON that is easy to consume without extra wrapping. Errors are normalized in the client into:
+## Auth & Response Contract
 
+### JWT
+All protected endpoints require:
+```
+Authorization: Bearer <token>
+```
+
+Tokens are returned from `/auth/login` and `/auth/google`. They expire per `JWT_EXPIRES_IN` (default `7d`).
+
+### Success response
+Endpoints return JSON directly — no envelope wrapper. The Axios client in the frontend unwraps `response.data` automatically.
+
+### Error response
+All errors are normalized by the client into:
 ```json
 {
   "success": false,
-  "message": "Human readable message",
+  "message": "Human readable description",
   "errors": [],
-  "status": 400
+  "status": 422
 }
 ```
 
-## Authentication
+Common status codes:
+| Code | Meaning |
+|---|---|
+| `400` | Bad request / missing field |
+| `401` | Missing or invalid JWT |
+| `403` | Authenticated but wrong role |
+| `404` | Resource not found |
+| `409` | Conflict (e.g. invalid state transition, duplicate) |
+| `422` | Business rule violation |
+| `503` | No agents available |
 
-Most protected routes use JWT authentication via `Authorization: Bearer <token>`. Role checks are enforced server-side with `roleGuard`.
+---
 
-## Auth Routes (`/api/auth`)
+## Auth Routes — `/api/auth`
 
-- `POST /register` - start email/password registration.
-- `POST /verify-email` - verify OTP and complete account creation.
-- `POST /resend-otp` - resend a verification code.
-- `POST /login` - authenticate with email/password.
-- `POST /google` - Google OAuth login.
-- `GET /me` - return the current authenticated user.
-- `POST /agents` - admin-only agent creation.
-- `GET /customers` - admin-only customer listing.
+### `POST /register`
+Start customer registration. Sends an OTP email.
 
-## Orders Routes (`/api/orders`)
+**Body:**
+```json
+{
+  "name": "Ada Lovelace",
+  "email": "ada@example.com",
+  "password": "secret123",
+  "phone": "9999999999"
+}
+```
 
-All routes below require authentication.
+**Response:** `201` — `{ "message": "OTP sent to ada@example.com" }`
 
-- `POST /preview` - calculate price without creating an order. Allowed roles: `customer`, `admin`.
-- `POST /confirm` - create the order using the same server-side pricing flow. Allowed roles: `customer`, `admin`.
-- `GET /` - list orders.
-- `GET /:id` - fetch a single order.
-- `PATCH /:id/status` - update order status. Allowed roles: `agent`, `admin`.
-- `POST /:id/reschedule` - request a reschedule. Allowed role: `customer`.
-- `POST /:id/auto-assign` - auto-assign an agent. Allowed role: `admin`.
-- `PATCH /:id/assign` - manually assign an agent. Allowed role: `admin`.
+---
 
-## Tracking Routes (`/api/orders`)
+### `POST /verify-email`
+Complete registration by submitting the OTP.
 
-- `GET /:id/timeline` - return the immutable tracking history for an order.
+**Body:** `{ "email": "ada@example.com", "otp": "482910" }`  
+**Response:** `{ "token": "...", "user": { "id", "name", "email", "role" } }`
 
-## Agents Routes (`/api/agents`)
+---
 
-All routes require authentication.
+### `POST /resend-otp`
+Resend a verification code (rate-limited via Redis).
 
-- `GET /me` - agent profile for the current user.
-- `GET /` - list all agents. Allowed role: `admin`.
-- `PATCH /clock-in` - mark the agent as on shift.
-- `PATCH /clock-out` - mark the agent as off shift.
-- `PATCH /location` - update the agent’s current location.
-- `GET /my-orders` - list orders assigned to the current agent.
+**Body:** `{ "email": "ada@example.com" }`  
+**Response:** `{ "message": "OTP resent" }`
 
-## Zones Routes (`/api/zones`)
+---
 
-- `GET /` - list zones and their linked areas.
-- `POST /` - create a zone. Allowed role: `admin`.
-- `PUT /:id` - update a zone. Allowed role: `admin`.
-- `POST /areas` - map a pincode to a zone. Allowed role: `admin`.
-- `DELETE /areas/:pincode` - remove a pincode mapping. Allowed role: `admin`.
+### `POST /login`
+Authenticate with email and password.
 
-## Rate Card Routes (`/api/rate-cards`)
+**Body:** `{ "email": "...", "password": "..." }`  
+**Response:** `{ "token": "...", "user": { "id", "name", "email", "role" } }`
 
-These routes are admin-only.
+---
 
-- `GET /` - list rate cards.
-- `POST /` - create a rate card.
-- `PUT /:id` - update a rate card.
-- `GET /cod-surcharge` - read COD surcharge configuration.
-- `POST /cod-surcharge` - create or update COD surcharge configuration.
+### `POST /google`
+Google OAuth sign-in or sign-up. New users get a role assigned based on the `role` field.
 
-## Notes
+**Body:**
+```json
+{
+  "credential": "<Google access_token from @react-oauth/google>",
+  "role": "customer"
+}
+```
+- `role` is only used when creating a **new** account. Returning users keep their existing role.
+- Valid values: `customer`, `agent`
 
-- The current frontend default API base URL is `http://localhost:4000/api`.
-- The backend starts the notification worker from `src/app.ts`, and there is also a standalone worker runner at `npm run worker`.
-- Route names and role rules in this document should be treated as the source of truth for the current codebase.
+**Response:** `{ "token": "...", "user": { "id", "name", "email", "role" } }`
+
+---
+
+### `GET /me` 🔒
+Return the current authenticated user's profile.
+
+**Response:** `{ "user": { "id", "name", "email", "role", "phone" } }`
+
+---
+
+### `POST /agents` 🔒 Admin only
+Create a new agent account directly (bypasses OTP flow).
+
+**Body:** `{ "name", "email", "password", "phone", "zoneId" }`  
+**Response:** `201` — `{ "user": { ... } }`
+
+---
+
+### `GET /customers` 🔒 Admin only
+List all customer accounts with their order counts.
+
+**Response:** `{ "customers": [{ "id", "name", "email", "phone", "createdAt", "_count" }] }`
+
+---
+
+## Orders Routes — `/api/orders`
+
+### `POST /preview` 🔒 Customer · Admin
+Calculate shipping cost without creating an order. Same pricing logic as confirm.
+
+**Body:**
+```json
+{
+  "pickupPincode": "110001",
+  "dropPincode": "400001",
+  "orderType": "B2C",
+  "paymentType": "COD",
+  "lengthCm": 30,
+  "breadthCm": 20,
+  "heightCm": 15,
+  "actualWeightKg": 2.5
+}
+```
+
+**Response:**
+```json
+{
+  "fromZoneId": "...", "fromZoneName": "North Delhi",
+  "toZoneId": "...", "toZoneName": "Mumbai Central",
+  "rateCardId": "...", "ratePerKg": 12.50,
+  "billableWeight": 2.5, "base": 31.25,
+  "codSurcharge": 3.13, "total": 34.38
+}
+```
+
+---
+
+### `POST /confirm` 🔒 Customer · Admin
+Create an order. Pricing is re-computed server-side — never trusts client price.
+
+**Body:** Same as `/preview` plus:
+```json
+{
+  "customerId": "...",
+  "createdById": "...",
+  "originAddress": "A-12 Connaught Place, New Delhi",
+  "destinationAddress": "Bandra West, Mumbai"
+}
+```
+
+**Response:** The full created `Order` object.
+
+---
+
+### `GET /` 🔒
+List orders. Results are automatically scoped by role:
+- **Customer** → only their own orders
+- **Agent** → only their assigned orders
+- **Admin** → all orders
+
+**Query params:** `?status=CREATED,PICKED_UP` · `?zoneId=` · `?agentId=`
+
+---
+
+### `GET /:id` 🔒
+Get a single order with full detail: customer, zones, agent, and shipment event history.
+
+---
+
+### `PATCH /:id/status` 🔒 Agent · Admin
+Advance the delivery stage. Transitions are validated by the state machine.
+
+**Body:** `{ "toStatus": "PICKED_UP", "notes": "Picked up at 10:30am" }`  
+**Response:** `{ "success": true, "newStatus": "PICKED_UP" }`
+
+**Valid transitions:**
+```
+CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED
+                                                     ↘ FAILED → RESCHEDULED
+```
+
+---
+
+### `POST /:id/reschedule` 🔒 Customer
+Reschedule a delivery that reached `FAILED` status.
+
+**Body:** `{ "rescheduleDate": "2025-08-15" }`  
+**Response:** `{ "success": true }`
+
+---
+
+### `POST /:id/auto-assign` 🔒 Admin
+Auto-assign the nearest available, on-shift agent within the pickup zone.
+
+**Response:** `{ "agentId": "..." }`  
+**Errors:** `503` if no agents are available.
+
+---
+
+### `PATCH /:id/assign` 🔒 Admin
+Manually assign a specific agent to an order.
+
+**Body:** `{ "agentId": "..." }`
+
+---
+
+### `GET /:id/timeline` 🔒
+Return the append-only `ShipmentEvent` history for an order, ordered by `createdAt` ascending.
+
+**Response:**
+```json
+{
+  "timeline": [
+    {
+      "id": "...", "orderId": "...",
+      "prevStage": null, "nextStage": "CREATED",
+      "changedById": "...", "changedByRole": "customer",
+      "notes": null, "createdAt": "...",
+      "changedBy": { "name": "Ada Lovelace", "role": "customer" }
+    }
+  ]
+}
+```
+
+---
+
+## Agents Routes — `/api/agents`
+
+### `GET /` 🔒 Admin
+List all agents with their user profile, zone, workload (`loadCount`, `slotLimit`), and shift status.
+
+### `GET /me` 🔒 Agent
+Return the agent profile for the currently authenticated user.
+
+### `PATCH /clock-in` 🔒 Agent
+Set `onShift = true`. Agent becomes eligible for auto-assignment.
+
+### `PATCH /clock-out` 🔒 Agent
+Set `onShift = false`.
+
+### `PATCH /location` 🔒 Agent
+Update agent's current coordinates.  
+**Body:** `{ "lat": 28.6139, "lng": 77.2090 }`
+
+### `GET /my-orders` 🔒 Agent
+List all orders currently assigned to this agent.
+
+---
+
+## Zones Routes — `/api/zones`
+
+### `GET /`
+Public. Returns all zones with their linked `Area` (pincode) records.
+
+### `POST /` 🔒 Admin
+Create a zone. **Body:** `{ "name": "North Delhi" }`
+
+### `PUT /:id` 🔒 Admin
+Update zone name.
+
+### `POST /areas` 🔒 Admin
+Map a pincode to a zone. **Body:** `{ "pincode": "110001", "zoneId": "..." }`
+
+### `DELETE /areas/:pincode` 🔒 Admin
+Remove a pincode-to-zone mapping.
+
+---
+
+## Pricing Matrix Routes — `/api/rate-cards`
+
+All routes are Admin only.
+
+### `GET /`
+List all active `PriceMatrix` entries with zone names.
+
+### `POST /`
+Create or upsert a price matrix entry.  
+**Body:** `{ "fromZoneId", "toZoneId", "orderType": "B2C", "pricePerKg": 12.50 }`
+
+### `PUT /:id`
+Update the `pricePerKg` for an existing matrix entry.  
+**Body:** `{ "ratePerKg": 14.00 }`
+
+### `GET /cod-surcharge`
+Return all `CodFeeConfig` records.
+
+### `POST /cod-surcharge`
+Create or update a COD fee config.  
+**Body:** `{ "orderType": "B2C", "type": "PERCENTAGE", "value": 2.5 }`
