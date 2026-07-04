@@ -21,11 +21,11 @@ export const MetricCard = ({
   trend,
   accentColor = '#0065FF',
 }: MetricCardProps) => {
-  const bg      = useColorModeValue('white', '#111E35');
-  const border  = useColorModeValue('#DFE1E6', 'rgba(255,255,255,0.07)');
+  const bg      = useColorModeValue('white', '#131D30');
+  const border  = useColorModeValue('#DFE1E6', 'rgba(99,130,255,0.18)');
   const labelClr= useColorModeValue('#5E6C84', '#8993A4');
-  const valueClr= useColorModeValue('#172B4D', '#E2E8F0');
-  const iconBg  = `${accentColor}14`;
+  const valueClr= useColorModeValue('#172B4D', '#F1F5F9');
+  const iconBg  = `${accentColor}18`;
 
   const trendColor = trend === 'up' ? '#22C55E' : trend === 'down' ? '#EF4444' : '#8993A4';
   const TrendIcon  = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : null;
@@ -42,9 +42,10 @@ export const MetricCard = ({
       _hover={{
         boxShadow: useColorModeValue(
           '0 4px 12px rgba(9,30,66,0.10)',
-          '0 4px 12px rgba(0,0,0,0.3)'
+          '0 4px 20px rgba(26,63,191,0.2)',
         ),
-        transform: 'translateY(-1px)',
+        transform: 'translateY(-2px)',
+        borderColor: useColorModeValue('#DFE1E6', 'rgba(99,130,255,0.35)'),
       }}
     >
       {/* Left accent rail — the Jira-style marker */}

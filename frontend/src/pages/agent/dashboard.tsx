@@ -74,7 +74,7 @@ export default function AgentDashboard() {
     return new Date(o.updatedAt).toDateString() === new Date().toDateString();
   }).length;
 
-  const pageBg      = useColorModeValue('#F4F5F7', '#0B1121');
+  const pageBg      = useColorModeValue('#F4F5F7', '#0C1322');
   const headingClr  = useColorModeValue('#172B4D', '#E2E8F0');
   const subClr      = useColorModeValue('#5E6C84', '#8993A4');
   const warnBg      = useColorModeValue('#FFFBEB', 'rgba(245,158,11,0.08)');

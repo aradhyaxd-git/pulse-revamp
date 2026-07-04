@@ -4,7 +4,7 @@ import { Sidebar } from './sidebar';
 import { TopNav } from './topNav';
 
 export default function DashboardLayout() {
-  const bg = useColorModeValue('#F4F5F7', '#0B1121');
+  const bg = useColorModeValue('#F4F5F7', '#0C1322');
 
   return (
     <Flex h="100dvh" overflow="hidden" bg={bg}>

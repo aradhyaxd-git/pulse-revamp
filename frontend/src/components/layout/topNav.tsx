@@ -29,12 +29,12 @@ export const TopNav = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const bg        = useColorModeValue('white', '#111E35');
-  const border    = useColorModeValue('#DFE1E6', 'rgba(255,255,255,0.06)');
+  const bg        = useColorModeValue('white', 'rgba(13,21,38,0.85)');
+  const border    = useColorModeValue('#DFE1E6', 'rgba(99,130,255,0.15)');
   const titleClr  = useColorModeValue('#172B4D', '#E2E8F0');
   const subClr    = useColorModeValue('#5E6C84', '#64748B');
-  const iconHover = useColorModeValue('rgba(9,30,66,0.06)', 'rgba(255,255,255,0.06)');
-  const menuBorder= useColorModeValue('#DFE1E6', 'rgba(255,255,255,0.08)');
+  const iconHover = useColorModeValue('rgba(9,30,66,0.06)', 'rgba(99,130,255,0.12)');
+  const menuBorder= useColorModeValue('#DFE1E6', 'rgba(99,130,255,0.15)');
 
   const pageLabel = ROUTE_LABELS[location.pathname]
     ?? (location.pathname.includes('/orders/') ? 'Shipment Details' : 'Overview');
@@ -64,6 +64,7 @@ export const TopNav = () => {
       align="center"
       justify="space-between"
       bg={bg}
+      backdropFilter="blur(12px)"
       borderBottom="1px solid"
       borderColor={border}
       flexShrink={0}

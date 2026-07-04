@@ -1,5 +1,4 @@
-// Sidebar — always deep navy regardless of color mode (spatial permanence).
-// Jira-inspired: compact nav groups, user footer, electric-blue active state.
+// Sidebar — indigo-blue brand gradient, matching auth page left panel.
 import { Box, VStack, Flex, Text, Icon } from '@chakra-ui/react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -8,16 +7,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
-// ─── Color tokens (all hard-coded — sidebar never changes with color mode) ───
-const NAVY   = '#0A1628';
-const ACTIVE_BG  = 'rgba(0,101,255,0.18)';
-const ACTIVE_BORDER = 'rgba(0,101,255,0.45)';
-const HOVER_BG   = 'rgba(255,255,255,0.05)';
-const MUTED  = 'rgba(255,255,255,0.35)';
-const DIM    = 'rgba(255,255,255,0.18)';
-const BRIGHT = '#E2E8F0';
-const ACCENT = '#4C9AFF';   // sky-blue for active icon
-const BORDER = 'rgba(255,255,255,0.06)';
+// ─── Color tokens ──────────────────────────────────────────────────────────────
+const ACTIVE_BG     = 'rgba(255,255,255,0.14)';
+const ACTIVE_BORDER = 'rgba(255,255,255,0.25)';
+const HOVER_BG      = 'rgba(255,255,255,0.07)';
+const MUTED         = 'rgba(255,255,255,0.45)';
+const DIM           = 'rgba(255,255,255,0.28)';
+const BRIGHT        = '#ffffff';
+const ACCENT        = '#93C5FD';   // light-blue for active icon
+const BORDER        = 'rgba(255,255,255,0.1)';
 
 export const Sidebar = () => {
   const { user } = useAuth();
@@ -27,39 +25,43 @@ export const Sidebar = () => {
     switch (user?.role?.toUpperCase()) {
       case 'ADMIN':
         return [
-          { group: 'MAIN',
+          {
+            group: 'MAIN',
             items: [
               { name: 'Command Center', icon: LayoutDashboard, path: '/admin/dashboard' },
               { name: 'Shipments',      icon: Package,         path: '/admin/orders'    },
               { name: 'Customers',      icon: Users,           path: '/admin/customers' },
-            ]
+            ],
           },
-          { group: 'OPERATIONS',
+          {
+            group: 'OPERATIONS',
             items: [
-              { name: 'Fleet',          icon: Truck,           path: '/admin/agents'    },
-              { name: 'Coverage Zones', icon: MapPin,          path: '/admin/zones'     },
-              { name: 'Settings',       icon: Settings,        path: '/admin/settings'  },
-            ]
+              { name: 'Fleet',          icon: Truck,    path: '/admin/agents'   },
+              { name: 'Coverage Zones', icon: MapPin,   path: '/admin/zones'    },
+              { name: 'Settings',       icon: Settings, path: '/admin/settings' },
+            ],
           },
         ];
       case 'CUSTOMER':
         return [
-          { group: 'MY ACCOUNT',
+          {
+            group: 'MY ACCOUNT',
             items: [
-              { name: 'Overview',      icon: LayoutDashboard, path: '/customer/dashboard'      },
-              { name: 'New Shipment',  icon: Package,         path: '/customer/orders/create'  },
-              { name: 'Shipment Log',  icon: History,         path: '/customer/orders/history' },
-            ]
+              { name: 'Overview',     icon: LayoutDashboard, path: '/customer/dashboard'      },
+              { name: 'New Shipment', icon: Package,         path: '/customer/orders/create'  },
+              { name: 'Shipment Log', icon: History,         path: '/customer/orders/history' },
+            ],
           },
         ];
       case 'AGENT':
         return [
-          { group: 'DRIVER HUB',
+          {
+            group: 'DRIVER HUB',
             items: [
-              { name: 'Overview',       icon: LayoutDashboard, path: '/agent/dashboard' },
-              { name: 'My Queue',       icon: ClipboardList,   path: '/agent/assigned'  },
-              { name: 'Active Run',     icon: Activity,        path: '/agent/active'    },
-            ]
+              { name: 'Overview',   icon: LayoutDashboard, path: '/agent/dashboard' },
+              { name: 'My Queue',   icon: ClipboardList,   path: '/agent/assigned'  },
+              { name: 'Active Run', icon: Activity,        path: '/agent/active'    },
+            ],
           },
         ];
       default:
@@ -82,70 +84,72 @@ export const Sidebar = () => {
     <Box
       w="230px"
       h="full"
-      bg={NAVY}
-      borderRight={`1px solid ${BORDER}`}
+      position="relative"
+      overflow="hidden"
       display="flex"
       flexDirection="column"
       flexShrink={0}
+      borderRight={`1px solid ${BORDER}`}
+      // Indigo gradient — same as auth left panel
+      bg="linear-gradient(160deg, #1A3FBF 0%, #0D1E8A 45%, #060D3A 100%)"
     >
-      {/* ── Brand Header ─────────────────────────────────────────── */}
+      {/* Grid texture overlay */}
+      <Box
+        position="absolute" inset={0} opacity={0.04} pointerEvents="none" zIndex={0}
+        backgroundImage="linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)"
+        backgroundSize="28px 28px"
+      />
+      {/* Top glow */}
+      <Box
+        position="absolute" top="-60px" right="-60px"
+        w="220px" h="220px"
+        bg="rgba(99,130,255,0.3)" filter="blur(80px)"
+        borderRadius="full" pointerEvents="none" zIndex={0}
+      />
+      {/* Bottom glow */}
+      <Box
+        position="absolute" bottom="-40px" left="-40px"
+        w="180px" h="180px"
+        bg="rgba(60,80,220,0.2)" filter="blur(70px)"
+        borderRadius="full" pointerEvents="none" zIndex={0}
+      />
+
+      {/* ── Brand Header ──────────────────────────────────────────── */}
       <Flex
-        align="center"
-        gap={2.5}
-        px={4}
-        py={4}
+        align="center" gap={2.5}
+        px={4} py={4}
         borderBottom={`1px solid ${BORDER}`}
-        flexShrink={0}
+        flexShrink={0} position="relative" zIndex={1}
       >
         <Flex
-          w={8}
-          h={8}
-          align="center"
-          justify="center"
-          bg="brand.500"
-          borderRadius="md"
-          flexShrink={0}
-          boxShadow="0 0 0 1px rgba(0,101,255,0.6), 0 2px 8px rgba(0,101,255,0.3)"
+          w={8} h={8} align="center" justify="center"
+          bg="rgba(255,255,255,0.15)"
+          border="1px solid rgba(255,255,255,0.25)"
+          borderRadius="md" flexShrink={0}
         >
           <Zap size={16} strokeWidth={2.5} color="white" />
         </Flex>
         <Box>
           <Text
-            fontSize="sm"
-            fontWeight="800"
-            fontFamily="heading"
-            color="white"
-            lineHeight="1.1"
-            letterSpacing="-0.01em"
+            fontSize="sm" fontWeight="800" fontFamily="heading"
+            color="white" lineHeight="1.1" letterSpacing="-0.01em"
           >
             Pulse Delivery
           </Text>
-          <Text
-            fontSize="2xs"
-            color={DIM}
-            fontWeight="500"
-            mt={0.5}
-            letterSpacing="0.03em"
-          >
+          <Text fontSize="2xs" color={DIM} fontWeight="500" mt={0.5} letterSpacing="0.03em">
             {getRoleLabel()}
           </Text>
         </Box>
       </Flex>
 
-      {/* ── Navigation ───────────────────────────────────────────── */}
-      <VStack align="stretch" spacing={0} py={3} flex={1} overflowY="auto">
+      {/* ── Navigation ────────────────────────────────────────────── */}
+      <VStack align="stretch" spacing={0} py={3} flex={1} overflowY="auto" position="relative" zIndex={1}>
         {navGroups.map((group) => (
           <Box key={group.group} mb={2}>
-            {/* Group label */}
             <Text
-              fontSize="2xs"
-              color={DIM}
-              fontWeight="700"
-              letterSpacing="0.09em"
-              textTransform="uppercase"
-              px={4}
-              py={1.5}
-              mb={0.5}
+              fontSize="2xs" color={DIM} fontWeight="700"
+              letterSpacing="0.1em" textTransform="uppercase"
+              px={4} py={1.5} mb={0.5}
             >
               {group.group}
             </Text>
@@ -154,8 +158,7 @@ export const Sidebar = () => {
               const dashboardPaths = ['/admin/dashboard', '/customer/dashboard', '/agent/dashboard'];
               const isActive =
                 location.pathname === link.path ||
-                (!dashboardPaths.includes(link.path) &&
-                  location.pathname.startsWith(link.path));
+                (!dashboardPaths.includes(link.path) && location.pathname.startsWith(link.path));
 
               return (
                 <Flex
@@ -167,7 +170,7 @@ export const Sidebar = () => {
                   mx={2}
                   px={3}
                   py={2}
-                  borderRadius="md"
+                  borderRadius="lg"
                   color={isActive ? BRIGHT : MUTED}
                   bg={isActive ? ACTIVE_BG : 'transparent'}
                   boxShadow={isActive ? `inset 0 0 0 1px ${ACTIVE_BORDER}` : 'none'}
@@ -184,25 +187,22 @@ export const Sidebar = () => {
                   {/* Active left-rail indicator */}
                   {isActive && (
                     <Box
-                      position="absolute"
-                      left={0}
-                      top="20%"
-                      bottom="20%"
-                      w="3px"
-                      bg="brand.400"
+                      position="absolute" left={0}
+                      top="20%" bottom="20%"
+                      w="3px" bg="#93C5FD"
                       borderRadius="full"
                     />
                   )}
                   <Icon
                     as={link.icon}
                     boxSize={4}
-                    color={isActive ? ACCENT : 'rgba(255,255,255,0.32)'}
+                    color={isActive ? ACCENT : 'rgba(255,255,255,0.35)'}
                     strokeWidth={isActive ? 2.5 : 2}
                     flexShrink={0}
                   />
                   <Text
                     fontSize="sm"
-                    fontWeight={isActive ? '600' : '400'}
+                    fontWeight={isActive ? '700' : '400'}
                     lineHeight="1"
                     letterSpacing="0"
                   >
@@ -215,23 +215,20 @@ export const Sidebar = () => {
         ))}
       </VStack>
 
-      {/* ── Footer — user + status ─────────────────────────────── */}
+      {/* ── Footer — status ───────────────────────────────────────── */}
       <Box
-        px={3}
-        py={3}
+        px={3} py={3}
         borderTop={`1px solid ${BORDER}`}
-        flexShrink={0}
+        flexShrink={0} position="relative" zIndex={1}
       >
         <Flex align="center" gap={2} px={1}>
           <Box
-            w={2}
-            h={2}
-            borderRadius="full"
-            bg="#22C55E"
-            boxShadow="0 0 6px rgba(34,197,94,0.55)"
+            w={2} h={2} borderRadius="full"
+            bg="#4ADE80"
+            boxShadow="0 0 8px rgba(74,222,128,0.6)"
             flexShrink={0}
           />
-          <Text fontSize="xs" color="rgba(255,255,255,0.3)" fontWeight="500">
+          <Text fontSize="xs" color="rgba(255,255,255,0.35)" fontWeight="500">
             All systems operational
           </Text>
         </Flex>
